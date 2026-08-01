@@ -1,0 +1,116 @@
+---
+- name: Configure Backend & Database Server
+  hosts: appserver
+  become: yes
+  tasks:
+    - name: Update apt cache & install dependencies
+      apt:
+        name:
+          - python3
+          - python3-pip
+          - python3-venv
+          - sqlite3
+        state: present
+        update_cache: yes
+
+    - name: Create app directory
+      file:
+        path: /opt/goa_app
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Copy Python backend code
+      copy:
+        src: ../app/backend.py
+        dest: /opt/goa_app/backend.py
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Install Python packages
+      pip:
+        name:
+          - flask
+          - flask-cors
+          - gunicorn
+        executable: pip3
+
+    - name: Create Systemd Service for Python Backend
+      copy:
+        dest: /etc/systemd/system/goa_backend.service
+        content: |
+          [Unit]
+          Description=Goa Trip Python API Service
+          After=network.target
+
+          [Service]
+          User=ubuntu
+          WorkingDirectory=/opt/goa_app
+          ExecStart=/usr/local/bin/gunicorn --bind 0.0.0.0:5000 backend:app
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload and start Backend service
+      systemd:
+        name: goa_backend
+        daemon_reload: yes
+        state: restarted
+        enabled: yes
+
+- name: Configure Web Server (Frontend)
+  hosts: webserver
+  become: yes
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Create web directory
+      file:
+        path: /var/www/goa_app
+        state: directory
+        owner: www-data
+        group: www-data
+
+    - name: Copy index.html to Web Root
+      copy:
+        src: ../app/static/index.html
+        dest: /var/www/goa_app/index.html
+        owner: www-data
+        group: www-data
+
+    - name: Configure Nginx Site
+      copy:
+        dest: /etc/nginx/sites-available/default
+        content: |
+          server {
+              listen 80;
+              server_name _;
+
+              root /var/www/goa_app;
+              index index.html;
+
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+
+              location /api/ {
+                  proxy_pass http://{{ hostvars[groups['appserver'][0]]['ansible_host'] }}:5000/api/;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+              }
+
+              location /uploads/ {
+                  proxy_pass http://{{ hostvars[groups['appserver'][0]]['ansible_host'] }}:5000/uploads/;
+              }
+          }
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+        enabled: yes

@@ -1,0 +1,82 @@
+name: Deploy Goa Trip 2-Tier App
+
+on:
+  push:
+    paths:
+      - 'infra/**'
+      - 'ansible/**'
+      - 'app/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: personal-oci  # <--- Corrected environment name
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install OCI CLI & Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install oci-cli ansible
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Setup OCI Authentication Config
+        run: |
+          mkdir -p ~/.oci
+          cat << 'EOF' > ~/.oci/key.pem
+          ${{ secrets.OCI_KEY_FILE }}
+          EOF
+          chmod 600 ~/.oci/key.pem
+
+          cat << EOF > ~/.oci/config
+          [DEFAULT]
+          user=${{ secrets.OCI_USER_OCID }}
+          fingerprint=${{ secrets.OCI_FINGERPRINT }}
+          tenancy=${{ secrets.OCI_TENANCY_OCID }}
+          region=${{ secrets.OCI_REGION }}
+          key_file=/home/runner/.oci/key.pem
+          EOF
+          chmod 600 ~/.oci/config
+
+      - name: Terraform Init & Apply
+        working-directory: ./infra
+        env:
+          TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+          TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+          TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+          TF_VAR_private_key_path: "/home/runner/.oci/key.pem"
+          TF_VAR_region: ${{ secrets.OCI_REGION }}
+          TF_VAR_compartment_ocid: ${{ secrets.OCI_COMPARTMENT_OCID }}
+          TF_VAR_ssh_public_key: ${{ secrets.VM_SSH_PUBLIC_KEY }}
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Setup SSH Key & Dynamic Ansible Inventory
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo -e "Host *\n  StrictHostKeyChecking no\n" > ~/.ssh/config
+
+          WEB_IP=$(cd infra && terraform output -raw web_vm_public_ip)
+          APP_IP=$(cd infra && terraform output -raw app_vm_public_ip)
+
+          cat << EOF > ansible/inventory.ini
+          [webserver]
+          $WEB_IP ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+
+          [appserver]
+          $APP_IP ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+          EOF
+
+      - name: Run Ansible Configuration & Deployment
+        working-directory: ./ansible
+        run: ansible-playbook -i inventory.ini deploy_app.yml
