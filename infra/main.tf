@@ -55,7 +55,10 @@ resource "oci_core_network_security_group_security_rule" "ssh" {
   protocol                  = "6" # TCP
   source                    = "0.0.0.0/0"
   tcp_options {
-    destination_port_range { min = 22, max = 22 }
+    destination_port_range {
+      min = 22
+      max = 22
+    }
   }
 }
 
@@ -66,7 +69,10 @@ resource "oci_core_network_security_group_security_rule" "http" {
   protocol                  = "6"
   source                    = "0.0.0.0/0"
   tcp_options {
-    destination_port_range { min = 80, max = 80 }
+    destination_port_range {
+      min = 80
+      max = 80
+    }
   }
 }
 
@@ -77,7 +83,10 @@ resource "oci_core_network_security_group_security_rule" "app_port" {
   protocol                  = "6"
   source                    = "0.0.0.0/0"
   tcp_options {
-    destination_port_range { min = 5000, max = 5000 }
+    destination_port_range {
+      min = 5000
+      max = 5000
+    }
   }
 }
 
