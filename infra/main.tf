@@ -54,6 +54,7 @@ resource "oci_core_network_security_group_security_rule" "ssh" {
   direction                 = "INGRESS"
   protocol                  = "6" # TCP
   source                    = "0.0.0.0/0"
+  source_type               = "CIDR_BLOCK"
   tcp_options {
     destination_port_range {
       min = 22
@@ -68,6 +69,7 @@ resource "oci_core_network_security_group_security_rule" "http" {
   direction                 = "INGRESS"
   protocol                  = "6"
   source                    = "0.0.0.0/0"
+  source_type               = "CIDR_BLOCK"
   tcp_options {
     destination_port_range {
       min = 80
@@ -82,6 +84,7 @@ resource "oci_core_network_security_group_security_rule" "app_port" {
   direction                 = "INGRESS"
   protocol                  = "6"
   source                    = "0.0.0.0/0"
+  source_type               = "CIDR_BLOCK"
   tcp_options {
     destination_port_range {
       min = 5000
@@ -96,6 +99,7 @@ resource "oci_core_network_security_group_security_rule" "egress" {
   direction                 = "EGRESS"
   protocol                  = "all"
   destination               = "0.0.0.0/0"
+  destination_type          = "CIDR_BLOCK"
 }
 
 # --- Subnet ---
@@ -113,7 +117,7 @@ data "oci_core_images" "ubuntu" {
   compartment_id           = var.compartment_ocid
   operating_system         = "Canonical Ubuntu"
   operating_system_version = "22.04"
-  shape                    = "VM.Standard.E4.Flex"
+  shape                    = "VM.Standard.E2.1.Micro"
   sort_by                  = "TIMECREATED"
   sort_order               = "DESC"
 }
@@ -127,12 +131,7 @@ resource "oci_core_instance" "web_vm" {
   compartment_id      = var.compartment_ocid
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   display_name        = "Goa-Web-VM"
-  shape               = "VM.Standard.E4.Flex"
-
-  shape_config {
-    ocpus         = 1
-    memory_in_gbs = 4
-  }
+  shape               = "VM.Standard.E2.1.Micro"
 
   create_vnic_details {
     subnet_id              = oci_core_subnet.goa_subnet.id
@@ -156,12 +155,7 @@ resource "oci_core_instance" "app_vm" {
   compartment_id      = var.compartment_ocid
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   display_name        = "Goa-AppDB-VM"
-  shape               = "VM.Standard.E4.Flex"
-
-  shape_config {
-    ocpus         = 1
-    memory_in_gbs = 4
-  }
+  shape               = "VM.Standard.E2.1.Micro"
 
   create_vnic_details {
     subnet_id              = oci_core_subnet.goa_subnet.id
@@ -188,6 +182,6 @@ data "oci_objectstorage_namespace" "ns" {
 resource "oci_objectstorage_bucket" "photos_bucket" {
   compartment_id = var.compartment_ocid
   name           = var.bucket_name
-  namespace      = data.oci_objectstorage_namespace.ns.value
+  namespace      = data.oci_objectstorage_namespace.ns.namespace
   access_type    = "ObjectRead" # Publicly readable for images
 }
