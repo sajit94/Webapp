@@ -11,7 +11,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: personal-oci  # <--- Corrected environment name
+    environment: personal-oci
 
     steps:
       - name: Checkout Code
@@ -28,13 +28,16 @@ jobs:
           terraform_wrapper: false
 
       - name: Setup OCI Authentication Config
+        env:
+          OCI_KEY: ${{ secrets.OCI_KEY_FILE }}
         run: |
           mkdir -p ~/.oci
-          cat << 'EOF' > ~/.oci/key.pem
-          ${{ secrets.OCI_KEY_FILE }}
-          EOF
+          
+          # Writing the key securely to preserve formatting
+          echo "$OCI_KEY" > ~/.oci/key.pem
           chmod 600 ~/.oci/key.pem
 
+          # Writing the standard config
           cat << EOF > ~/.oci/config
           [DEFAULT]
           user=${{ secrets.OCI_USER_OCID }}
