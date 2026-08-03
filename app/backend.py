@@ -1,99 +1,97 @@
-import os
-import sqlite3
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-from werkzeug.utils import secure_filename
+from flask import Flask, request, jsonify
+import oci
+import uuid
 
 app = Flask(__name__)
-CORS(app)
 
-UPLOAD_FOLDER = '/opt/goa_app/uploads'
-DB_PATH = '/opt/goa_app/goa_trip.db'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# --- OCI Authentication (Instance Principals) ---
+try:
+    # This automatically authenticates using your VM's identity!
+    signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+    object_storage_client = oci.object_storage.ObjectStorageClient(config={}, signer=signer)
+except Exception as e:
+    print(f"Warning: Could not initialize OCI signer. {e}")
+    object_storage_client = None
 
-# --- Database Initialization & Pre-seeding ---
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    # Create Crew Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS crew (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            status TEXT DEFAULT 'Ready for Goa 🌴'
-        )
-    ''')
-
-    # Create Photos Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS photos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            uploader TEXT NOT NULL,
-            filename TEXT NOT NULL,
-            caption TEXT,
-            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-    # Pre-seed Crew Names
-    crew_members = ['Sajith', 'Aslam', 'Noble', 'Vishnu', 'Sandy', 'Anku']
-    for member in crew_members:
-        cursor.execute('INSERT OR IGNORE INTO crew (name) VALUES (?)', (member,))
-    
-    conn.commit()
-    conn.close()
-
-init_db()
-
-# --- API Endpoints ---
-@app.route('/api/crew', methods=['GET'])
-def get_crew():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('SELECT id, name, status FROM crew')
-    rows = cursor.fetchall()
-    conn.close()
-    return jsonify([{"id": r[0], "name": r[1], "status": r[2]} for r in rows])
-
-@app.route('/api/photos', methods=['GET'])
-def get_photos():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('SELECT uploader, filename, caption, uploaded_at FROM photos ORDER BY id DESC')
-    rows = cursor.fetchall()
-    conn.close()
-    return jsonify([{"uploader": r[0], "url": f"/uploads/{r[1]}", "caption": r[2], "date": r[3]} for r in rows])
+NAMESPACE = "ax8gjz18ycrc"
+BUCKET_NAME = "goa-trip-memories-bucket"
+REGION = "us-sanjose-1"
 
 @app.route('/api/upload', methods=['POST'])
 def upload_photo():
     if 'photo' not in request.files:
-        return jsonify({"error": "No image uploaded"}), 400
+        return jsonify({"error": "No photo provided"}), 400
+
+    photo = request.files['photo']
+    uploader = request.form.get('uploader', 'Unknown')
+    caption = request.form.get('caption', 'No caption')
     
-    file = request.files['photo']
-    uploader = request.form.get('uploader', 'Anonymous')
-    caption = request.form.get('caption', 'Goa Memories')
+    file_extension = photo.filename.split('.')[-1]
+    unique_filename = f"{uploader}_{uuid.uuid4().hex[:8]}.{file_extension}"
+    
+    try:
+        # Push the image to your OCI bucket
+        object_storage_client.put_object(
+            namespace_name=NAMESPACE,
+            bucket_name=BUCKET_NAME,
+            object_name=unique_filename,
+            put_object_body=photo.read(),
+            content_type=photo.content_type,
+            # We attach who uploaded it and the caption directly to the image metadata
+            opc_meta={
+                "uploader": uploader,
+                "caption": caption
+            }
+        )
+        return jsonify({"message": "Successfully uploaded!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    if file.filename == '':
-        return jsonify({"error": "No file selected"}), 400
-
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(filepath)
-
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('INSERT INTO photos (uploader, filename, caption) VALUES (?, ?, ?)',
-                   (uploader, filename, caption))
-    conn.commit()
-    conn.close()
-
-    return jsonify({"message": "Photo uploaded successfully!", "url": f"/uploads/{filename}"}), 201
-
-@app.route('/uploads/<filename>')
-def serve_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+@app.route('/api/photos', methods=['GET'])
+def get_photos():
+    try:
+        # Get all files inside the bucket
+        objects = object_storage_client.list_objects(
+            namespace_name=NAMESPACE, 
+            bucket_name=BUCKET_NAME,
+            fields="name"
+        ).data.objects
+        
+        photo_data = []
+        for obj in objects:
+            try:
+                # Read the metadata tag to see who uploaded it
+                head_req = object_storage_client.head_object(
+                    namespace_name=NAMESPACE,
+                    bucket_name=BUCKET_NAME,
+                    object_name=obj.name
+                )
+                
+                metadata = head_req.headers
+                uploader = "Squad Member"
+                caption = "Goa Trip!"
+                
+                for key, value in metadata.items():
+                    if key.lower() == 'opc-meta-uploader':
+                        uploader = value
+                    elif key.lower() == 'opc-meta-caption':
+                        caption = value
+                
+                # Build the direct link so the web browser can display the image
+                public_url = f"https://objectstorage.{REGION}.oraclecloud.com/n/{NAMESPACE}/b/{BUCKET_NAME}/o/{obj.name}"
+                
+                photo_data.append({
+                    "url": public_url,
+                    "uploader": uploader,
+                    "caption": caption
+                })
+            except Exception:
+                continue
+            
+        return jsonify(photo_data), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

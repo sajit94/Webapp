@@ -19,10 +19,7 @@
       min-height: 100vh;
       padding: 20px;
     }
-    header {
-      text-align: center;
-      padding: 40px 10px;
-    }
+    header { text-align: center; padding: 40px 10px; }
     h1 {
       font-size: 3rem;
       background: linear-gradient(45deg, #ff007f, #ffaa00, #00f0ff);
@@ -31,113 +28,23 @@
       text-shadow: 0 0 20px rgba(255, 0, 127, 0.4);
       margin-bottom: 5px;
     }
-    .countdown {
-      font-size: 1.2rem;
-      color: #00f0ff;
-      letter-spacing: 2px;
-      font-weight: bold;
-    }
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    .section-title {
-      font-size: 1.8rem;
-      border-bottom: 2px solid var(--primary);
-      padding-bottom: 10px;
-      margin-top: 40px;
-      color: var(--secondary);
-    }
-    /* Crew Grid */
-    .crew-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 15px;
-      margin-top: 20px;
-    }
-    .crew-card {
-      background: var(--card-bg);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 15px;
-      text-align: center;
-      backdrop-filter: blur(10px);
-      transition: transform 0.3s, box-shadow 0.3s;
-    }
-    .crew-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 0 15px var(--primary);
-    }
-    /* Upload Section */
-    .upload-box {
-      background: var(--card-bg);
-      border: 2px dashed var(--secondary);
-      border-radius: 16px;
-      padding: 25px;
-      margin-top: 20px;
-      text-align: center;
-    }
-    select, input[type="text"], input[type="file"], button {
-      margin: 10px 5px;
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-    }
-    select, input[type="text"] {
-      background: rgba(255, 255, 255, 0.15);
-      color: #fff;
-      width: 200px;
-    }
-    button {
-      background: linear-gradient(45deg, var(--primary), #ffaa00);
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover {
-      box-shadow: 0 0 15px var(--primary);
-    }
-    /* Dynamic Photo Gallery */
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 20px;
-      margin-top: 25px;
-    }
-    .photo-card {
-      position: relative;
-      border-radius: 12px;
-      overflow: hidden;
-      background: var(--card-bg);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      transition: transform 0.4s ease;
-    }
-    .photo-card img {
-      width: 100%;
-      height: 220px;
-      object-fit: cover;
-      display: block;
-      transition: filter 0.4s;
-    }
-    .photo-card:hover {
-      transform: scale(1.03);
-      box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
-    }
-    .photo-info {
-      padding: 10px;
-      background: rgba(0, 0, 0, 0.6);
-      font-size: 0.9rem;
-    }
-    .uploader-badge {
-      color: var(--secondary);
-      font-weight: bold;
-    }
+    .countdown { font-size: 1.2rem; color: #00f0ff; letter-spacing: 2px; font-weight: bold; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-title { font-size: 1.8rem; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-top: 40px; color: var(--secondary); }
+    .crew-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
+    .crew-card { background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 15px; text-align: center; backdrop-filter: blur(10px); }
+    .upload-box { background: var(--card-bg); border: 2px dashed var(--secondary); border-radius: 16px; padding: 25px; margin-top: 20px; text-align: center; }
+    select, input[type="text"], input[type="file"], button { margin: 10px 5px; padding: 12px; border-radius: 8px; border: none; outline: none; }
+    select, input[type="text"] { background: rgba(255, 255, 255, 0.15); color: #fff; width: 200px; }
+    button { background: linear-gradient(45deg, var(--primary), #ffaa00); color: #fff; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-top: 25px; }
+    .photo-card { position: relative; border-radius: 12px; overflow: hidden; background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); }
+    .photo-card img { width: 100%; height: 220px; object-fit: cover; display: block; }
+    .photo-info { padding: 10px; background: rgba(0, 0, 0, 0.6); font-size: 0.9rem; }
+    .uploader-badge { color: var(--secondary); font-weight: bold; }
   </style>
 </head>
 <body>
-
   <header>
     <h1>GOA TRIP 2026 🌊</h1>
     <div class="countdown">COUNTDOWN TO AUGUST 13TH 🚀</div>
@@ -145,13 +52,26 @@
 
   <div class="container">
     <h2 class="section-title">The Squad</h2>
-    <div class="crew-grid" id="crewGrid"></div>
+    <div class="crew-grid">
+      <div class="crew-card"><h3>Sajith</h3><p>Ready</p></div>
+      <div class="crew-card"><h3>Noble</h3><p>Ready</p></div>
+      <div class="crew-card"><h3>Aslam</h3><p>Ready</p></div>
+      <div class="crew-card"><h3>Vishnu</h3><p>Ready</p></div>
+      <div class="crew-card"><h3>Ankit</h3><p>Ready</p></div>
+      <div class="crew-card"><h3>Sandy</h3><p>Ready</p></div>
+    </div>
 
     <h2 class="section-title">Upload Trip Memories</h2>
     <div class="upload-box">
       <form id="uploadForm">
         <select id="uploaderSelect" required>
-          <option value="">Select Who You Are</option>
+          <option value="" disabled selected>Select Who You Are</option>
+          <option value="Sajith">Sajith</option>
+          <option value="Noble">Noble</option>
+          <option value="Aslam">Aslam</option>
+          <option value="Vishnu">Vishnu</option>
+          <option value="Ankit">Ankit</option>
+          <option value="Sandy">Sandy</option>
         </select>
         <input type="text" id="captionInput" placeholder="Add a caption..." required>
         <input type="file" id="photoInput" accept="image/*" required>
@@ -164,27 +84,12 @@
   </div>
 
   <script>
-    // Load Squad Members
-    async function loadCrew() {
-      const res = await fetch('/api/crew');
-      const crew = await res.json();
-      const grid = document.getElementById('crewGrid');
-      const select = document.getElementById('uploaderSelect');
-      grid.innerHTML = '';
-      
-      crew.forEach(member => {
-        grid.innerHTML += `<div class="crew-card"><h3>${member.name}</h3><p>${member.status}</p></div>`;
-        select.innerHTML += `<option value="${member.name}">${member.name}</option>`;
-      });
-    }
-
-    // Load Photo Gallery
     async function loadPhotos() {
       const res = await fetch('/api/photos');
       const photos = await res.json();
       const gallery = document.getElementById('photoGallery');
       gallery.innerHTML = '';
-
+      
       photos.forEach(photo => {
         gallery.innerHTML += `
           <div class="photo-card">
@@ -197,9 +102,15 @@
       });
     }
 
-    // Upload Photo
     document.getElementById('uploadForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      // Change the button text to show it's working
+      const btn = e.target.querySelector('button');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = 'Uploading... ⏳';
+      btn.disabled = true;
+
       const formData = new FormData();
       formData.append('uploader', document.getElementById('uploaderSelect').value);
       formData.append('caption', document.getElementById('captionInput').value);
@@ -210,15 +121,17 @@
         body: formData
       });
 
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+
       if (res.ok) {
         document.getElementById('uploadForm').reset();
         loadPhotos();
       } else {
-        alert('Upload failed!');
+        alert('Upload failed! Check the backend logs.');
       }
     });
 
-    loadCrew();
     loadPhotos();
   </script>
 </body>
