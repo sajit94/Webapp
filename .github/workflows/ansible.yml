@@ -24,10 +24,12 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           
-          # Preserves all line breaks strictly to prevent libcrypto parsing errors
           cat << 'EOF' > ~/.ssh/id_rsa
           ${{ secrets.VM_SSH_PRIVATE_KEY }}
           EOF
+          
+          # Strip out hidden Windows carriage returns to fix the libcrypto error
+          tr -d '\r' < ~/.ssh/id_rsa > ~/.ssh/id_rsa_fixed && mv ~/.ssh/id_rsa_fixed ~/.ssh/id_rsa
           
           chmod 600 ~/.ssh/id_rsa
           echo -e "Host *\n  StrictHostKeyChecking no\n" > ~/.ssh/config
