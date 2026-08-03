@@ -31,12 +31,13 @@ jobs:
           mkdir -p ~/.ssh
           echo -e "Host *\n  StrictHostKeyChecking no\n" > ~/.ssh/config
 
+          # Creating the inventory file with the required ansible_host variable
           cat << EOF > ansible/inventory.ini
           [webserver]
-          ${{ github.event.inputs.web_ip }} ansible_user=ubuntu
+          ${{ github.event.inputs.web_ip }} ansible_host=${{ github.event.inputs.web_ip }} ansible_user=ubuntu
 
           [appserver]
-          ${{ github.event.inputs.app_ip }} ansible_user=ubuntu
+          ${{ github.event.inputs.app_ip }} ansible_host=${{ github.event.inputs.app_ip }} ansible_user=ubuntu
           EOF
 
       - name: Run Ansible Configuration & Deployment
