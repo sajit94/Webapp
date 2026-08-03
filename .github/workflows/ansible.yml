@@ -23,7 +23,12 @@ jobs:
       - name: Setup SSH Key & Manual Ansible Inventory
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          
+          # Preserves all line breaks strictly to prevent libcrypto parsing errors
+          cat << 'EOF' > ~/.ssh/id_rsa
+          ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          EOF
+          
           chmod 600 ~/.ssh/id_rsa
           echo -e "Host *\n  StrictHostKeyChecking no\n" > ~/.ssh/config
 
