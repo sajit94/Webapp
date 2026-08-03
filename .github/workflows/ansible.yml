@@ -20,22 +20,20 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Setup SSH Key & Manual Ansible Inventory
-        run: |
-          mkdir -p ~/.ssh
-          
-          # Safely decode your existing key without any newline or formatting corruption
-          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_rsa
-          
-          chmod 600 ~/.ssh/id_rsa
-          echo -e "Host *\n  StrictHostKeyChecking no\n" > ~/.ssh/config
+      - name: Setup SSH Key via Agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
 
+      - name: Create Ansible Inventory
+        run: |
+          mkdir -p ansible
           cat << EOF > ansible/inventory.ini
           [webserver]
-          ${{ github.event.inputs.web_ip }} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+          ${{ github.event.inputs.web_ip }} ansible_user=ubuntu
 
           [appserver]
-          ${{ github.event.inputs.app_ip }} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+          ${{ github.event.inputs.app_ip }} ansible_user=ubuntu
           EOF
 
       - name: Run Ansible Configuration & Deployment
