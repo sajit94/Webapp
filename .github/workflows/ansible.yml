@@ -20,14 +20,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Setup SSH Key via Agent
+      - name: Setup SSH Agent & Key
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
 
-      - name: Create Ansible Inventory
+      - name: Setup Ansible Inventory
         run: |
-          mkdir -p ansible
+          mkdir -p ~/.ssh
+          echo -e "Host *\n  StrictHostKeyChecking no\n" > ~/.ssh/config
+
+          # Creating the inventory WITHOUT hardcoding the private key file path.
+          # Ansible will automatically talk to the ssh-agent in the background.
           cat << EOF > ansible/inventory.ini
           [webserver]
           ${{ github.event.inputs.web_ip }} ansible_user=ubuntu
