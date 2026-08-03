@@ -1,20 +1,7 @@
-name: Deploy Ansible Configuration Only
-
-on:
-  workflow_dispatch:
-    inputs:
-      web_ip:
-        description: 'Public IP of the Web VM (Goa-Web-VM)'
-        required: true
-        type: string
-      app_ip:
-        description: 'Public IP of the App VM (Goa-AppDB-VM)'
-        required: true
-        type: string
-
 jobs:
   configure-servers:
     runs-on: ubuntu-latest
+    environment: personal-oci  # <--- ADD THIS EXACT LINE
     
     steps:
       - name: Checkout Code
@@ -30,8 +17,6 @@ jobs:
           mkdir -p ~/.ssh
           echo -e "Host *\n  StrictHostKeyChecking no\n" > ~/.ssh/config
 
-          # Creating the inventory WITHOUT hardcoding the private key file path.
-          # Ansible will automatically talk to the ssh-agent in the background.
           cat << EOF > ansible/inventory.ini
           [webserver]
           ${{ github.event.inputs.web_ip }} ansible_user=ubuntu
