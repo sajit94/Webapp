@@ -1,0 +1,47 @@
+name: Deploy Ansible Configuration Only
+
+on:
+  workflow_dispatch:
+    inputs:
+      web_ip:
+        description: 'Public IP of the Web VM (Goa-Web-VM)'
+        required: true
+        type: string
+      app_ip:
+        description: 'Public IP of the App VM (Goa-AppDB-VM)'
+        required: true
+        type: string
+
+jobs:
+  configure-servers:
+    runs-on: ubuntu-latest
+    environment: personal-oci
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH Agent & Key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+
+      - name: Setup Ansible Inventory
+        run: |
+          mkdir -p ~/.ssh
+          echo -e "Host *\n  StrictHostKeyChecking no\n" > ~/.ssh/config
+
+          # Creating the inventory file with the required ansible_host variable
+          cat << EOF > ansible/inventory.ini
+          [webserver]
+          ${{ github.event.inputs.web_ip }} ansible_host=${{ github.event.inputs.web_ip }} ansible_user=ubuntu
+
+          [appserver]
+          ${{ github.event.inputs.app_ip }} ansible_host=${{ github.event.inputs.app_ip }} ansible_user=ubuntu
+          EOF
+
+      - name: Run Ansible Configuration & Deployment
+        working-directory: ./ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: ansible-playbook -i inventory.ini deploy_app.yml
