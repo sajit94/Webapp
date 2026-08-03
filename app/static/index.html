@@ -278,7 +278,6 @@
         
         <input type="text" id="captionInput" placeholder="Write a classy caption..." required>
         
-        <!-- Sassy Custom File Input -->
         <label for="photoInput" class="file-label" id="fileLabel">Tap to select photo 📸</label>
         <input type="file" id="photoInput" accept="image/*" required>
         
@@ -291,7 +290,7 @@
   </div>
 
   <script>
-    // --- UI UX Addition: Update file label when a photo is selected ---
+    // Update file label when a photo is selected
     document.getElementById('photoInput').addEventListener('change', function(e) {
       const fileName = e.target.files[0]?.name;
       const label = document.getElementById('fileLabel');
@@ -306,7 +305,6 @@
       }
     });
 
-    // --- Original Backend Logic ---
     async function loadPhotos() {
       try {
         const res = await fetch('/api/photos');
@@ -344,7 +342,9 @@
       const formData = new FormData();
       formData.append('uploader', document.getElementById('uploaderSelect').value);
       formData.append('caption', document.getElementById('captionInput').value);
-      formData.append('photo', document.getElementById('photoInput').files[0]);
+      
+      // FIXED: Swapped 'photo' to 'file' to match Flask backend requirement
+      formData.append('file', document.getElementById('photoInput').files[0]);
 
       try {
         const res = await fetch('/api/upload', {
