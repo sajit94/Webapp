@@ -1,0 +1,42 @@
+name: Deploy Ansible Configuration Only
+
+on:
+  workflow_dispatch:
+    inputs:
+      web_ip:
+        description: 'Public IP of the Web VM (Goa-Web-VM)'
+        required: true
+        type: string
+      app_ip:
+        description: 'Public IP of the App VM (Goa-AppDB-VM)'
+        required: true
+        type: string
+
+jobs:
+  configure-servers:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH Key & Manual Ansible Inventory
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo -e "Host *\n  StrictHostKeyChecking no\n" > ~/.ssh/config
+
+          cat << EOF > ansible/inventory.ini
+          [webserver]
+          ${{ github.event.inputs.web_ip }} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+
+          [appserver]
+          ${{ github.event.inputs.app_ip }} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+          EOF
+
+      - name: Run Ansible Configuration & Deployment
+        working-directory: ./ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: ansible-playbook -i inventory.ini deploy_app.yml
