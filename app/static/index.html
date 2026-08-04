@@ -344,7 +344,7 @@
       formData.append('caption', document.getElementById('captionInput').value);
       
       // FIXED: Swapped 'photo' to 'file' to match Flask backend requirement
-      formData.append('file', document.getElementById('photoInput').files[0]);
+      formData.append('photo', document.getElementById('photoInput').files[0]);
 
       try {
         const res = await fetch('/api/upload', {
